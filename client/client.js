@@ -1,6 +1,7 @@
 const https = require('https')
 const http = require('http')
 const payload = require('./payload')
+const { getLogger } = require('./logger')
 
 let nTotal = 0
 let nSuccess = 0
@@ -62,7 +63,7 @@ async function ping(hostname, port) {
   return new Promise((resolve, reject) => {
     const start = performance.now()
 
-    getOptions = {
+    const getOptions = {
       hostname,
       port,
       path: '/',
@@ -82,30 +83,21 @@ async function ping(hostname, port) {
   })
 }
 
-class PingLogger {
-  constructor(id) {
-    this.id = id
-  }
-  log(msg) {
-    console.log(`[Ping ${this.id}] ${msg}`)
-  }
-}
-
 async function report(info, timeout = 1) {
-  const logger = new PingLogger(info.pingId)
-  logger.log(`Sending(${info.deliveryAttempt})... `)
+  const log = getLogger(info.pingId)
+  log(`Sending(${info.deliveryAttempt})... `)
 
   try {
     const res = await sendData(info)
-    logger.log(`Response: ${res}`)
+    log(`Response: ${res}`)
     return
   } catch (e) {
-    logger.log(`Error: ${e}`)
+    log(`Error: ${e}`)
   }
   info.deliveryAttempt++
   timeout *= 2
 
-  logger.log(`Waiting for ${timeout} ms before retry`)
+  log(`Waiting for ${timeout} ms before retry`)
   setTimeout(() => report(info, timeout), timeout)
 }
 
